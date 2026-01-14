@@ -8,15 +8,24 @@ module Writeback (
     output logic destinationEnable,
     output logic [4:0] writeAddress,
     output logic [31:0] writeData,
-    output logic memoryWritebackValid
+    output logic memoryWritebackValid,
+    // csrs
+    output destinationCSR_ destinationCSR,
+    output logic csrDestinationEnable,
+    output logic [31:0] csrWriteData
 );
 
     assign memoryWritebackValid = memoryWritebackPayload.valid;
+    // reg file
     assign writeAddress = memoryWritebackPayload.destinationRegister;
-    assign writeData = memoryWritebackPayload.data;
-    assign destinationEnable =
-        memoryWritebackPayload.valid &&
+    assign writeData = (memoryWritebackPayload.CSROp != CSR_NONE) ? memoryWritebackPayload.oldCSRValue : memoryWritebackPayload.data;
+    assign destinationEnable = (memoryWritebackPayload.CSROp != CSR_NONE) ? (memoryWritebackPayload.valid && !memoryWritebackPayload.illegal) :
+        (memoryWritebackPayload.valid &&
         memoryWritebackPayload.writebackEnable &&
-        !memoryWritebackPayload.illegal;
+        !memoryWritebackPayload.illegal);
+    // csr file
+    assign destinationCSR = memoryWritebackPayload.destinationCSR;
+    assign csrWriteData = memoryWritebackPayload.data;
+    assign csrDestinationEnable = (memoryWritebackPayload.CSROp != CSR_NONE) ? (memoryWritebackPayload.valid && !memoryWritebackPayload.illegal && memoryWritebackPayload.CSRWriteIntent) : 1'b0;
 
 endmodule

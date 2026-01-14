@@ -12,7 +12,10 @@ module Execute (
     input logic forwardEnable1,
     input logic forwardEnable2,
     input logic [31:0] forwardData1,
-    input logic [31:0] forwardData2
+    input logic [31:0] forwardData2,
+    // CSR interface
+    input logic [31:0] csrReadData,
+    output destinationCSR_ destinationCSR
 );
 
     logic [31:0] operand1;
@@ -20,87 +23,137 @@ module Execute (
     logic [31:0] result;
     logic redirectAsserted = 1'd0; // IMEM Latency Optimization
     logic [31:0] brOp1, brOp2;
+    logic [31:0] csrOperand;
+    logic [31:0] tempResult;
 
     always_comb begin
         branchValid = '0;
+        destinationCSR = '0;
+        tempResult = 32'd0;
         operand1 = 32'd0;
         operand2 = 32'd0;
         result = 32'd0;
         branchData = 32'd0;
         brOp1 = forwardEnable1 ? forwardData1 : decodeExecutePayload.registerData1;
         brOp2 = forwardEnable2 ? forwardData2 : decodeExecutePayload.registerData2;
-        unique case (decodeExecutePayload.aluSource)
-            default:;
-            ALU_RS1_RS2: begin
-                if (forwardEnable1) begin
-                    operand1 = forwardData1;
-                end else begin
-                    operand1 = decodeExecutePayload.registerData1;
-                end
-                if (forwardEnable2) begin
-                    operand2 = forwardData2;
-                end else begin
-                    operand2 = decodeExecutePayload.registerData2;
-                end
-            end
-            ALU_RS1_IMM: begin
-                if (forwardEnable1) begin
-                    operand1 = forwardData1;
-                end else begin
-                    operand1 = decodeExecutePayload.registerData1;
-                end
-                operand2 = decodeExecutePayload.immediate;
-            end
-            ALU_PC_IMM: begin
-                operand1 = decodeExecutePayload.programCounter;
-                operand2 = decodeExecutePayload.immediate;
-            end
-            ALU_ZERO_IMM: begin
-                operand1 = 32'd0;
-                operand2 = decodeExecutePayload.immediate;
-            end
-        endcase
-        unique case (decodeExecutePayload.aluOperation)
-            default:;
-            ALU_ADD: result = operand1 + operand2;
-            ALU_SUB: result = operand1 - operand2;
-            ALU_AND: result = operand1 & operand2;
-            ALU_OR: result = operand1 | operand2;
-            ALU_XOR: result = operand1 ^ operand2;
-            ALU_SLL: result = operand1 << operand2[4:0];
-            ALU_SRL: result = operand1 >> operand2[4:0];
-            ALU_SRA: result = $signed(operand1) >>> operand2[4:0];
-            ALU_SLT: result = ($signed(operand1) < $signed(operand2)) ? 32'd1 : 32'd0;
-            ALU_SLTU: result = (operand1 < operand2) ? 32'd1 : 32'd0;
-        endcase
-        if (decodeExecutePayload.valid && !executeMemoryControl.flush) begin
-            unique case (decodeExecutePayload.branchType)
-                BR_EQ:  branchValid = (brOp1 == brOp2);
-                BR_NE:  branchValid = (brOp1 != brOp2);
-                BR_LT:  branchValid = ($signed(brOp1) < $signed(brOp2));
-                BR_GE:  branchValid = ($signed(brOp1) >= $signed(brOp2));
-                BR_LTU: branchValid = (brOp1 < brOp2);
-                BR_GEU: branchValid = (brOp1 >= brOp2);
-                default: ;
-            endcase
-            unique case (decodeExecutePayload.jumpType)
+        csrOperand = decodeExecutePayload.decodeExecuteCSR.CSRSrc ? brOp1 : {27'd0, decodeExecutePayload.decodeExecuteCSR.CSRImmediate};
+        if (decodeExecutePayload.decodeExecuteCSR.CSROp == CSR_NONE) begin
+            unique case (decodeExecutePayload.aluSource)
                 default:;
-                JUMP_JAL: branchValid = 1'd1;
-                JUMP_JALR: begin
-                    branchValid = 1'd1;
-                    branchData = {result[31:1], 1'b0};
+                ALU_RS1_RS2: begin
+                    if (forwardEnable1) begin
+                        operand1 = forwardData1;
+                    end else begin
+                        operand1 = decodeExecutePayload.registerData1;
+                    end
+                    if (forwardEnable2) begin
+                        operand2 = forwardData2;
+                    end else begin
+                        operand2 = decodeExecutePayload.registerData2;
+                    end
+                end
+                ALU_RS1_IMM: begin
+                    if (forwardEnable1) begin
+                        operand1 = forwardData1;
+                    end else begin
+                        operand1 = decodeExecutePayload.registerData1;
+                    end
+                    operand2 = decodeExecutePayload.immediate;
+                end
+                ALU_PC_IMM: begin
+                    operand1 = decodeExecutePayload.programCounter;
+                    operand2 = decodeExecutePayload.immediate;
+                end
+                ALU_ZERO_IMM: begin
+                    operand1 = 32'd0;
+                    operand2 = decodeExecutePayload.immediate;
                 end
             endcase
+            unique case (decodeExecutePayload.aluOperation)
+                default:;
+                ALU_ADD: result = operand1 + operand2;
+                ALU_SUB: result = operand1 - operand2;
+                ALU_AND: result = operand1 & operand2;
+                ALU_OR: result = operand1 | operand2;
+                ALU_XOR: result = operand1 ^ operand2;
+                ALU_SLL: result = operand1 << operand2[4:0];
+                ALU_SRL: result = operand1 >> operand2[4:0];
+                ALU_SRA: result = $signed(operand1) >>> operand2[4:0];
+                ALU_SLT: result = ($signed(operand1) < $signed(operand2)) ? 32'd1 : 32'd0;
+                ALU_SLTU: result = (operand1 < operand2) ? 32'd1 : 32'd0;
+            endcase
+            if (decodeExecutePayload.valid && !executeMemoryControl.flush) begin
+                unique case (decodeExecutePayload.branchType)
+                    BR_EQ: branchValid = (brOp1 == brOp2);
+                    BR_NE: branchValid = (brOp1 != brOp2);
+                    BR_LT: branchValid = ($signed(brOp1) < $signed(brOp2));
+                    BR_GE: branchValid = ($signed(brOp1) >= $signed(brOp2));
+                    BR_LTU: branchValid = (brOp1 < brOp2);
+                    BR_GEU: branchValid = (brOp1 >= brOp2);
+                    default: ;
+                endcase
+                unique case (decodeExecutePayload.jumpType)
+                    default:;
+                    JUMP_JAL: branchValid = 1'd1;
+                    JUMP_JALR: begin
+                        branchValid = 1'd1;
+                        branchData = {result[31:1], 1'b0};
+                    end
+                endcase
+            end else begin
+                branchValid = 1'd0;
+            end
+            if (decodeExecutePayload.jumpType != JUMP_JALR) begin
+                branchData = result;
+            end
+            if (redirectAsserted) begin
+                branchValid = 1'd0;
+            end
         end else begin
-            branchValid = 1'd0;
-        end
-        if (decodeExecutePayload.jumpType != JUMP_JALR) begin
-            branchData = result;
-        end
-        if (redirectAsserted) begin
-            branchValid = 1'd0;
+            destinationCSR = decodeExecutePayload.decodeExecuteCSR.destinationCSR;
+            unique case (decodeExecutePayload.decodeExecuteCSR.CSROp)
+                default: ;
+                CSR_RW: tempResult = csrOperand;
+                CSR_RS: tempResult = csrReadData | csrOperand;
+                CSR_RC: tempResult = csrReadData & ~csrOperand;
+            endcase
+            unique case (destinationCSR)
+                MSTATUS: begin
+                    result = 32'd0;
+                    result[3] = tempResult[3];
+                    result[7] = tempResult[7];
+                    result[12:11] = 2'b11;
+                end
+                MEPC: begin
+                    result = {tempResult[31:2], 2'b00};
+                end
+                MTVEC: begin
+                    result = {tempResult[31:2], 2'b00};
+                end
+                MIE: begin
+                    result = 32'd0;
+                    result[3] = tempResult[3]; // MSIE
+                    result[7] = tempResult[7]; // MTIE
+                    result[11] = tempResult[11]; // MEIE
+                end
+                MIP: begin
+                    result = csrReadData;
+                end
+                MSCRATCH,
+                MCAUSE,
+                MTVAL,
+                MCYCLE,
+                MINSTRET: begin
+                    result = tempResult;
+                end
+                default: begin
+                    result = tempResult;
+                end
+            endcase
         end
     end
+
+
     always_ff @(posedge clock) begin
         if (reset) begin // synth will reduce this, broken up for clarity
             redirectAsserted <= 1'd0;
@@ -129,7 +182,14 @@ module Execute (
             executeMemoryPayload.writebackType <= decodeExecutePayload.writebackType;
             executeMemoryPayload.valid <= decodeExecutePayload.valid;
             executeMemoryPayload.illegal <= decodeExecutePayload.illegal;
+            // csr
+            executeMemoryPayload.destinationCSR <= decodeExecutePayload.decodeExecuteCSR.destinationCSR;
+            executeMemoryPayload.oldCSRValue <= csrReadData;
+            executeMemoryPayload.CSROp <= decodeExecutePayload.decodeExecuteCSR.CSROp;
+            executeMemoryPayload.CSRWriteIntent <= decodeExecutePayload.decodeExecuteCSR.CSRWriteIntent;
         end
     end
-
+    
 endmodule
+
+

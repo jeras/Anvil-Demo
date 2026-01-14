@@ -70,6 +70,9 @@ module Top (
     logic [31:0] readData1;
     logic [31:0] readData2;
 
+    // CSR File
+    logic [31:0] csrReadData;
+
     // Fetch Stage
     logic [31:0] instructionAddress;
     fetchDecodePayload_ fetchDecodePayload;
@@ -83,6 +86,7 @@ module Top (
     logic branchValid;
     logic [31:0] branchData;
     executeMemoryPayload_ executeMemoryPayload;
+    destinationCSR_ readCSR;
 
     // Memory Stage
     memoryWritebackPayload_ memoryWritebackPayload;
@@ -97,6 +101,9 @@ module Top (
     logic [4:0] writeAddress;
     logic [31:0] writeData;
     logic memoryWritebackValid;
+    destinationCSR_ destinationCSR;
+    logic csrDestinationEnable;
+    logic [31:0] csrWriteData;
 
     // Forewarding Unit
 
@@ -110,13 +117,27 @@ module Top (
         .executeMemoryValid(executeMemoryPayload.valid),
         .executeMemoryWritebackType(executeMemoryPayload.writebackType),
         .memoryWritebackDestinationRegister(memoryWritebackPayload.destinationRegister),
-        .memoryWritebackData(memoryWritebackPayload.data),
+        .memoryWritebackData(writeData),
         .memoryWritebackValid(memoryWritebackPayload.valid),
-        .memoryWritebackWritebackEnable(memoryWritebackPayload.writebackEnable),
+        .memoryWritebackWritebackEnable(destinationEnable),
         .forwardEnable1(forwardEnable1),
         .forwardEnable2(forwardEnable2),
         .forwardData1(forwardData1),
-        .forwardData2(forwardData2)
+        .forwardData2(forwardData2),
+        //csr
+        .executeMemoryCSROp(executeMemoryPayload.CSROp)
+        .oldCSRData(executeMemoryPayload.oldCSRValue)
+    );
+
+    CSRFile csrFile (
+        .clock(clock),
+        .reset(reset),
+        .interrupt(interrupt),
+        .csrReadData(csrReadData),
+        .csrWriteData(csrWriteData),
+        .readCSR(readCSR),
+        .destinationCSR(destinationCSR),
+        .csrDestinationEnable(csrDestinationEnable)
     );
 
     BranchPredictor branchPredictor (
@@ -202,7 +223,9 @@ module Top (
         .forwardEnable1(forwardEnable1),
         .forwardEnable2(forwardEnable2),
         .forwardData1(forwardData1),
-        .forwardData2(forwardData2)
+        .forwardData2(forwardData2),
+        .csrReadData(csrReadData),
+        .destinationCSR(readCSR)
     );
 
     Memory memory (
@@ -230,7 +253,9 @@ module Top (
         .destinationEnable(destinationEnable),
         .writeAddress(writeAddress),
         .writeData(writeData),
-        .memoryWritebackValid(memoryWritebackValid)
+        .memoryWritebackValid(memoryWritebackValid),
+        .destinationCSR(destinationCSR),
+        .csrDestinationEnable(csrDestinationEnable)
     );
 
     Imem #(.DEPTH_WORDS(1024)) imem_inst (

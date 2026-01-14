@@ -139,6 +139,13 @@ module Memory (
             memoryWritebackPayload.valid <= executeMemoryPayload.valid;
             memoryWritebackPayload.programCounter <= executeMemoryPayload.programCounter;
             memoryWritebackPayload.destinationRegister <= executeMemoryPayload.destinationRegister;
+            memoryWritebackPayload.destinationCSR <= executeMemoryPayload.destinationCSR;
+            memoryWritebackPayload.oldCSRValue <= executeMemoryPayload.oldCSRValue;
+            memoryWritebackPayload.CSROp <= executeMemoryPayload.CSROp;
+            memoryWritebackPayload.CSRWriteIntent <= executeMemoryPayload.CSRWriteIntent;
+            if (executeMemoryPayload.CSROp != CSR_NONE) begin
+                memoryWritebackPayload.data <= executeMemoryPayload.result;
+            end
         end
     end
 

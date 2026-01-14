@@ -9,16 +9,18 @@ module Decode (
     output decodeExecutePayload_ decodeExecutePayload,
     output logic [4:0] readAddress1,
     output logic [4:0] readAddress2,
-    input [31:0] readData1,
-    input [31:0] readData2
+    input logic [31:0] readData1,
+    input logic [31:0] readData2
 );
 
     opcode_ opcode;
     decodeExecutePayload_ decodeExecuteCandidate;
     assign opcode = opcode_'(fetchDecodePayload.instruction[6:0]);
+    logic ro;
 
     always_comb begin
         decodeExecuteCandidate = '0;
+        ro = 1'b0;
         readAddress1 = 5'd0;
         readAddress2 = 5'd0;
         decodeExecuteCandidate.registerData1 = readData1;
@@ -167,8 +169,87 @@ module Decode (
                 if (fetchDecodePayload.instruction[14:12] != 3'b000)
                     decodeExecuteCandidate.illegal = 1'b1;
             end // I-type   (jump and link register)
-            OPCODE_SYSTEM: begin 
-                decodeExecuteCandidate.illegal = 1'b1;
+            OPCODE_SYSTEM: begin
+                readAddress1 = fetchDecodePayload.instruction[19:15];
+                decodeExecuteCandidate.destinationRegister = fetchDecodePayload.instruction[11:7];
+                decodeExecuteCandidate.writebackType = WB_ALU;
+                if (fetchDecodePayload.instruction[14:12] != 3'b000) begin
+                    unique case (fetchDecodePayload.instruction[31:20])
+                        // Machine Information Registers (MRO)
+                        12'hF11: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MVENDORID;
+                        12'hF12: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MARCHID;
+                        12'hF13: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MIMPID;
+                        12'hF14: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MHARTID;
+                        // Machine Trap Setup (MRW)
+                        12'h300: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MSTATUS;
+                        12'h304: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MIE;
+                        12'h305: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MTVEC;
+                        // Machine Trap Handling (MRW)
+                        12'h340: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MSCRATCH;
+                        12'h341: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MEPC;
+                        12'h342: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MCAUSE;
+                        12'h343: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MTVAL;
+                        12'h344: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MIP;
+                        // Machine Counters / Timers (MRW)
+                        12'hB00: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MCYCLE;
+                        12'hB02: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MINSTRET;
+                        // ISA description (MRO)
+                        12'h301: decodeExecuteCandidate.decodeExecuteCSR.destinationCSR = MISA;
+                        default: decodeExecuteCandidate.illegal = 1'b1;
+                    endcase
+                    unique case (fetchDecodePayload.instruction[14:12]) // funct3
+                        default: decodeExecuteCandidate.illegal = 1'b1;
+                        3'b001: begin
+                            decodeExecuteCandidate.decodeExecuteCSR.CSROp = CSR_RW;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRSrc = 1'b1;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent = 1'b1;
+                        end // csrrw
+                        3'b010: begin 
+                            decodeExecuteCandidate.decodeExecuteCSR.CSROp = CSR_RS;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRSrc = 1'b1;
+                            if (readAddress1 != 5'd0) begin
+                                decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent = 1'b1;
+                            end
+                        end // csrrs
+                        3'b011: begin
+                            decodeExecuteCandidate.decodeExecuteCSR.CSROp = CSR_RC;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRSrc = 1'b1;
+                            if (readAddress1 != 5'd0) begin
+                                decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent = 1'b1;
+                            end
+                        end // csrrc
+                        3'b101: begin
+                            decodeExecuteCandidate.decodeExecuteCSR.CSROp = CSR_RW;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRSrc = 1'b0;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRImmediate = fetchDecodePayload.instruction[19:15];
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent = 1'b1;
+                        end // csrrwi
+                        3'b110: begin
+                            decodeExecuteCandidate.decodeExecuteCSR.CSROp = CSR_RS;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRSrc = 1'b0;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRImmediate = fetchDecodePayload.instruction[19:15];
+                            if (fetchDecodePayload.instruction[19:15] != 5'd0) begin
+                                decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent = 1'b1;
+                            end
+                        end // csrrsi
+                        3'b111: begin
+                            decodeExecuteCandidate.decodeExecuteCSR.CSROp = CSR_RC;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRSrc = 1'b0;
+                            decodeExecuteCandidate.decodeExecuteCSR.CSRImmediate = fetchDecodePayload.instruction[19:15];
+                            if (fetchDecodePayload.instruction[19:15] != 5'd0) begin
+                                decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent = 1'b1;
+                            end
+                        end // csrrci
+                    endcase
+                    ro = (decodeExecuteCandidate.decodeExecuteCSR.destinationCSR == MISA) ||
+                        (decodeExecuteCandidate.decodeExecuteCSR.destinationCSR == MVENDORID) ||
+                        (decodeExecuteCandidate.decodeExecuteCSR.destinationCSR == MARCHID) ||
+                        (decodeExecuteCandidate.decodeExecuteCSR.destinationCSR == MIMPID) ||
+                        (decodeExecuteCandidate.decodeExecuteCSR.destinationCSR == MHARTID);
+                    if (decodeExecuteCandidate.decodeExecuteCSR.CSRWriteIntent && ro) begin
+                        decodeExecuteCandidate.illegal = 1'b1;
+                    end
+                end
             end // I-type   (CSR / ECALL / EBREAK)
             default: begin
                 decodeExecuteCandidate.illegal = 1'b1;

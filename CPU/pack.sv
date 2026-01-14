@@ -91,32 +91,76 @@ package pack;
     aluOperation_ aluOperation;
     jumpType_ jumpType;
     writebackType_ writebackType;
+    decodeExecuteCSR_ decodeExecuteCSR;
     logic illegal;
     logic valid;
   } decodeExecutePayload_;
 
-    typedef struct packed {
-      logic [31:0] programCounter;
-      logic [31:0] programCounterPlus4;
-      logic [4:0] destinationRegister;
-      logic memoryReadEnable;
-      logic memoryWriteEnable;
-      logic [1:0] memoryWidth;
-      logic memorySigned;
-      logic [31:0] result;
-      logic [31:0] storeData;
-      writebackType_ writebackType;
-      logic illegal;
-      logic valid;
-    } executeMemoryPayload_;
-    
-    typedef struct packed {
-      logic [31:0] programCounter;
-      logic [4:0] destinationRegister;
-      logic [31:0] data;
-      logic writebackEnable;
-      logic illegal;
-      logic valid;
-    } memoryWritebackPayload_;
-    
-endpackage 
+  typedef struct packed {
+    logic [31:0] programCounter;
+    logic [31:0] programCounterPlus4;
+    logic [4:0] destinationRegister;
+    logic memoryReadEnable;
+    logic memoryWriteEnable;
+    logic [1:0] memoryWidth;
+    logic memorySigned;
+    logic [31:0] result;
+    logic [31:0] storeData;
+    writebackType_ writebackType;
+    logic illegal;
+    logic valid;
+    // csr
+    destinationCSR_ destinationCSR;
+    logic [31:0] oldCSRValue;
+    CSROp_ CSROp;
+    logic CSRWriteIntent;
+  } executeMemoryPayload_;
+
+  typedef struct packed {
+    logic [31:0] programCounter;
+    logic [4:0] destinationRegister;
+    logic [31:0] data;
+    logic writebackEnable;
+    logic illegal;
+    logic valid;
+    // csr
+    destinationCSR_ destinationCSR;
+    logic [31:0] oldCSRValue;
+    CSROp_ CSROp;
+    logic CSRWriteIntent;
+  } memoryWritebackPayload_;
+
+  typedef enum logic [3:0] {
+    MSTATUS = 4'b0000, // x300 MRW Lots Here need to set MIE on exception
+    MEPC = 4'b0001, // x341 MRW Store PC of Trap Instruction. Set PC to This on MRET
+    MCAUSE = 4'b0010, // x342 MRW Cause of Last Trap. Set on Trap (specific preset values needed)
+    MTVAL = 4'b0011, // x343 MRW On Trap Immediately Set This to 0
+    MIE = 4'b0100, // x304 MRW Treat as Plain Reg but Mask Certain Bits (clarify)
+    MTVEC = 4'b0110, // x305 MRW Redirect Here on Trap PC <= {mtvec[31:2], 2'b00}
+    MSCRATCH = 4'b0111, // x340 MRW
+    MISA = 4'b1000, // x301 MRO Read-Only, Returns ISA info constant
+    MVENDORID = 4'b1001, // xF11 MRO Read-Only, Initialize 0
+    MARCHID = 4'b1010, // xF12 MRO Read-Only, Initialize 0
+    MIMPID = 4'b1011, // xF13 MRO Read-Only, Initialize 0
+    MHARTID = 4'b1100, // xF14 MRO Read-Only, Initialize 0
+    MIP = 4'b1101, // x344 MRW
+    MCYCLE = 4'b1110, // xB00 MRW Counts Cycles Post Reset
+    MINSTRET = 4'b1111 // xB02 MRW Counts Instructions Retired
+  } destinationCSR_; // INITIALIZE ALL BUT MISA AT ZERO
+
+  typedef enum logic [1:0] {
+    CSR_NONE = 2'b00,
+    CSR_RW = 2'b01,
+    CSR_RS = 2'b10,
+    CSR_RC = 2'b11,
+  } CSROp_;
+
+  typedef struct packed {
+    CSROp_ CSROp; // default none
+    destinationCSR_ destinationCSR;
+    logic CSRSrc; // 0 = immediate, 1 = register
+    logic [4:0] CSRImmediate; // zero extend in ex
+    logic CSRWriteIntent; // indicates if instruction intends to write CSR
+  } decodeExecuteCSR_;
+
+endpackage

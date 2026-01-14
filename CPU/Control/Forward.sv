@@ -15,7 +15,10 @@ module Forward (
     output logic forwardEnable1,
     output logic forwardEnable2,
     output logic [31:0] forwardData1,
-    output logic [31:0] forwardData2
+    output logic [31:0] forwardData2,
+    //csrs
+    input CSROp_ executeMemoryCSROp,
+    input [31:0] oldCSRData
 );
 
     always_comb begin
@@ -25,14 +28,17 @@ module Forward (
         forwardData2 = 32'd0;
         if (decodeExecuteRegister1 != 5'd0) begin
             if (executeMemoryValid &&
-                (executeMemoryWritebackType != WB_NONE && executeMemoryWritebackType != WB_MEM) &&
+                ((executeMemoryWritebackType != WB_NONE && executeMemoryWritebackType != WB_MEM) || executeMemoryCSROp != CSR_NONE) &&
                 (executeMemoryDestinationRegister != 5'd0) &&
                 (decodeExecuteRegister1 == executeMemoryDestinationRegister)) begin
                 forwardEnable1 = 1'b1;
                 case (executeMemoryWritebackType)
                     WB_ALU: forwardData1 = executeMemoryData;
                     WB_PC4: forwardData1 = executeMemoryPC4;
-                    default: forwardData1 = 32'd0;
+                    default: begin
+                        if (executeMemoryCSROp != CSR_NONE) forwardData1 = oldCSRData;
+                        else forwardData1 = 32'd0;
+                    end
                 endcase
             end else if (memoryWritebackValid &&
                         memoryWritebackWritebackEnable &&
@@ -44,14 +50,17 @@ module Forward (
         end
         if (decodeExecuteRegister2 != 5'd0) begin
             if (executeMemoryValid &&
-                (executeMemoryWritebackType != WB_NONE && executeMemoryWritebackType != WB_MEM) &&
+                ((executeMemoryWritebackType != WB_NONE && executeMemoryWritebackType != WB_MEM) || executeMemoryCSROp != CSR_NONE) &&
                 (executeMemoryDestinationRegister != 5'd0) &&
                 (decodeExecuteRegister2 == executeMemoryDestinationRegister)) begin
                 forwardEnable2 = 1'b1;
                 case (executeMemoryWritebackType)
                     WB_ALU: forwardData2 = executeMemoryData;
                     WB_PC4: forwardData2 = executeMemoryPC4;
-                    default: forwardData2 = 32'd0;
+                    default: begin
+                        if (executeMemoryCSROp != CSR_NONE) forwardData2 = oldCSRData;
+                        else forwardData2 = 32'd0;
+                    end
                 endcase
             end else if (memoryWritebackValid &&
                         memoryWritebackWritebackEnable &&
