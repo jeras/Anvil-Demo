@@ -14,8 +14,8 @@ module Execute (
     input logic [31:0] forwardData1,
     input logic [31:0] forwardData2,
     // CSR interface
-    output logic destinationCSR,
-    input logic [31:0] CSRReadData,
+    output destinationCSR_ destinationCSR,
+    input logic [31:0] csrReadData,
     input logic csrForwardEnable,
     input logic csrForwardData
 );
@@ -37,7 +37,7 @@ module Execute (
         operand2 = 32'd0;
         result = 32'd0;
         branchData = 32'd0;
-        forwardCorrectedCSRReadData = csrForwardEnable ? csrForwardData : CSRReadData;
+        forwardCorrectedCSRReadData = csrForwardEnable ? csrForwardData : csrReadData;
         brOp1 = forwardEnable1 ? forwardData1 : decodeExecutePayload.registerData1;
         brOp2 = forwardEnable2 ? forwardData2 : decodeExecutePayload.registerData2;
         csrOperand = decodeExecutePayload.decodeExecuteCSR.CSRSrc ? brOp1 : {27'd0, decodeExecutePayload.decodeExecuteCSR.CSRImmediate};

@@ -137,7 +137,8 @@ module Top (
         .memoryWritebackCSRWriteIntent(memoryWritebackPayload.CSRWriteIntent),
         .decodeExecuteDestinationCSR(decodeExecutePayload.decodeExecuteCSR.destinationCSR),
         .csrForwardData(csrForwardData),
-        .csrForwardEnable(csrForwardEnable)
+        .csrForwardEnable(csrForwardEnable),
+        .memoryWritebackCSRData(csrWriteData)
     );
 
     CSRFile csrFile (
