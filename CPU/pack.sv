@@ -2,7 +2,6 @@
 package pack;
 
   parameter logic [31:0] resetVector = 32'h80000000;
-  parameter logic [31:0] trapVector = 32'h00000000;
 
   typedef enum logic [2:0] {
     BR_NONE = 3'd0,
@@ -79,7 +78,7 @@ package pack;
     MCAUSE = 4'b0010, // x342 MRW Cause of Last Trap. Set on Trap (specific preset values needed)
     MTVAL = 4'b0011, // x343 MRW On Trap Immediately Set This to 0
     MIE = 4'b0100, // x304 MRW Treat as Plain Reg but Mask Certain Bits (clarify)
-    MTVEC = 4'b0110, // x305 MRW Redirect Here on Trap PC <= {mtvec[31:2], 2'b00}
+    MTVEC = 4'b0110, // DONE
     MSCRATCH = 4'b0111, // DONE
     MISA = 4'b1000, // DONE
     MVENDORID = 4'b1001, // DONE

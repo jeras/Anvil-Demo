@@ -7,7 +7,7 @@ module Execute (
     input decodeExecutePayload_ decodeExecutePayload,
     input control executeMemoryControl,
     output executeMemoryPayload_ executeMemoryPayload,
-    output logic branchValid,
+    output logic gatedBranchValid,
     output logic [31:0] branchData,
     input logic forwardEnable1,
     input logic forwardEnable2,
@@ -28,8 +28,12 @@ module Execute (
     logic [31:0] csrOperand;
     logic [31:0] tempResult;
     logic [31:0] forwardCorrectedCSRReadData;
+    logic illegal;
+
+    assign gatedBranchValid = branchValid && !illegal;
 
     always_comb begin
+        illegal = 1'b0;
         branchValid = '0;
         destinationCSR = MSTATUS;
         tempResult = 32'd0;
@@ -101,14 +105,20 @@ module Execute (
                     JUMP_JAL: branchValid = 1'd1;
                     JUMP_JALR: begin
                         branchValid = 1'd1;
-                        branchData = {result[31:1], 1'b0};
                     end
                 endcase
             end else begin
                 branchValid = 1'd0;
             end
-            if (decodeExecutePayload.jumpType != JUMP_JALR) begin
-                branchData = result;
+            if ((decodeExecutePayload.jumpType != JUMP_NONE || decodeExecutePayload.branchType != BR_NONE) && (decodeExecutePayload.valid == 1'b1) && (branchValid == 1'd1) && (!decodeExecutePayload.illegal)) begin
+                if (decodeExecutePayload.jumpType == JUMP_JALR) begin
+                    branchData = {result[31:1], 1'b0};
+                end else begin
+                    branchData = result;
+                end
+                if (branchData[1:0] != 2'b00) begin 
+                    illegal = 1'b1;
+                end
             end
             if (redirectAsserted) begin
                 branchValid = 1'd0;
@@ -185,7 +195,11 @@ module Execute (
             executeMemoryPayload.storeData <= (forwardEnable2 ? forwardData2 : decodeExecutePayload.registerData2);
             executeMemoryPayload.writebackType <= decodeExecutePayload.writebackType;
             executeMemoryPayload.valid <= decodeExecutePayload.valid;
-            executeMemoryPayload.illegal <= decodeExecutePayload.illegal;
+            if (!illegal) begin
+                executeMemoryPayload.illegal <= decodeExecutePayload.illegal;
+            end else begin
+                executeMemoryPayload.illegal <= 1'b1;
+            end
             // csr
             executeMemoryPayload.destinationCSR <= decodeExecutePayload.decodeExecuteCSR.destinationCSR;
             executeMemoryPayload.oldCSRValue <= forwardCorrectedCSRReadData;

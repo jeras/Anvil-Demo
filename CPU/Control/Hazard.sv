@@ -20,7 +20,8 @@ module Hazard (
     input logic [4:0] executeMemoryDestinationRegister,
     input logic executeMemoryValid,
     input writebackType_ executeMemoryWritebackType,
-    input logic loadDataValid
+    input logic loadDataValid,
+    input logic executeMemoryIllegal
 );
     // Trap Handler
     always_comb begin
@@ -30,18 +31,25 @@ module Hazard (
         memoryWritebackControl = '0;
         controlReset = 1'b0;
         if (!reset) begin
-            if (decodeExecuteValid && decodeExecuteIllegal) begin
-                // Trap from Decode stage
-                fetchDecodeControl.flush = 1'b1;
-                decodeExecuteControl.flush = 1'b1;
-                executeMemoryControl.flush = 1'b1;
-                controlReset = 1'b1;
-            end else if (memoryWritebackValid && memoryWritebackIllegal) begin
-                // Trap from Memory stage
+            if (memoryWritebackValid && memoryWritebackIllegal) begin
+                // Misalignment from Memory Stage
                 fetchDecodeControl.flush = 1'b1;
                 decodeExecuteControl.flush = 1'b1;
                 executeMemoryControl.flush = 1'b1;
                 memoryWritebackControl.flush = 1'b1;
+                controlReset = 1'b1;
+            end else if (executeMemoryValid && executeMemoryIllegal) begin
+                // Misalignment from Execute Stage
+                fetchDecodeControl.flush = 1'b1;
+                decodeExecuteControl.flush = 1'b1;
+                executeMemoryControl.flush = 1'b1;
+                memoryWritebackControl.flush = 1'b1;
+                controlReset = 1'b1;
+            end else if (decodeExecuteValid && decodeExecuteIllegal) begin
+                // Illegal Instruction from Decode Stage
+                fetchDecodeControl.flush = 1'b1;
+                decodeExecuteControl.flush = 1'b1;
+                executeMemoryControl.flush = 1'b1;
                 controlReset = 1'b1;
             end else if (branchValid) begin
                 // PC Redirect Flush
@@ -69,6 +77,6 @@ module Hazard (
             end
         end
     end
-
 endmodule
 
+// Trap Handler will redirect to 0 by default unless set

@@ -9,12 +9,14 @@ module CSRFile (
     input logic [31:0] csrWriteData,
     output logic [31:0] csrReadData,
     input logic csrDestinationEnable,
-    input logic dualValid
+    input logic dualValid,
+    output logic [31:0] trapVector
 );
     logic [31:0] csrs [0:15];
 
     always_comb begin
         csrReadData = csrs[readCSR];
+        trapVector = csrs[MTVEC];
     end
 
     integer i;
@@ -28,10 +30,6 @@ module CSRFile (
         end else begin
             if (csrDestinationEnable) begin
                 csrs[destinationCSR] <= csrWriteData;
-            end
-            csrs[MCYCLE] <= csrs[MCYCLE] + 32'b1;
-            if (dualValid) begin
-                csrs[MINSTRET] <= csrs[MINSTRET] + 32'b1;
             end
             if (!(csrDestinationEnable && (destinationCSR == MCYCLE))) begin
                 csrs[MCYCLE] <= csrs[MCYCLE] + 32'd1;

@@ -12,6 +12,7 @@ module Fetch (
     input logic [31:0] branchPredictData,
     input logic branchPredictValid,
     input logic controlReset,
+    input logic [31:0] trapVector;
     output logic [31:0] instructionAddress,
     output fetchDecodePayload_ fetchDecodePayload
 );
@@ -54,7 +55,6 @@ module Fetch (
     end
 
 endmodule
-
 
 // CONTROL FLUSH OVERWRITES BOUNDRY REG UNIVERSALLY
 // COMBINATIONAL INVALIDS DO NOT AND ARE SUPERCEEDED BY STALL

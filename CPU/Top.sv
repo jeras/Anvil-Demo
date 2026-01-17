@@ -178,7 +178,8 @@ module Top (
         .executeMemoryDestinationRegister(executeMemoryPayload.destinationRegister),
         .executeMemoryValid(executeMemoryPayload.valid),
         .executeMemoryWritebackType(executeMemoryPayload.writebackType),
-        .loadDataValid(loadDataValid)
+        .loadDataValid(loadDataValid),
+        .executeMemoryIllegal(executeMemoryPayload.illegal)
     );
 
     Fetch fetch (
@@ -231,7 +232,7 @@ module Top (
         .decodeExecutePayload(decodeExecutePayload),
         .executeMemoryControl(executeMemoryControl),
         .executeMemoryPayload(executeMemoryPayload),
-        .branchValid(branchValid),
+        .gatedBranchValid(branchValid),
         .branchData(branchData),
         .forwardEnable1(forwardEnable1),
         .forwardEnable2(forwardEnable2),
