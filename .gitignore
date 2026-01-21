@@ -1,4 +1,5 @@
 spike
 riscv-tests/
 .vscode/
-Unpassed/
+riscv-arch-test/
+.venv/

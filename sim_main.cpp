@@ -40,9 +40,16 @@ int main(int argc, char **argv) {
             top.dbg_MEM_WB_programCounter,
             top.dbg_MEM_WB_Valid);
         printf("\nRegisters:");
+        int failed = 0;
         for (int i = 0; i < 32; i++) {
             if (i % 8 == 0) printf("\n");
             printf("x%02d=%08x ", i, top.dbg_registers[i]);
+            if ((top.dbg_registers[i] == 0x0000600d) || (top.dbg_registers[i] == 0x00000bad)) {
+                failed = 1;
+            }
+        }
+        if (failed == 1) {
+            break;
         }
     }
     printf("\n\n");

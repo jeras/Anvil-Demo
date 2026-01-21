@@ -97,6 +97,24 @@ package pack;
     CSR_RC = 2'b11
   } CSROp_;
 
+  typedef enum logic [3:0] {
+    NONE = 4'b0000,
+    ILLEGAL = 4'b0001,
+    MIS_STORE = 4'b0010,
+    MIS_LOAD = 4'b0011,
+    MIS_INST = 4'b0100,
+    ECALL = 4'b0101,
+    EBREAK = 4'b0110,
+    ACCESS_STORE = 4'b0111, // not implemented yet
+    ACCESS_LOAD = 4'b1000, // not implemented yet
+    ACCESS_INST = 4'b1001 // not implemented yet
+  } trapType_;
+
+  typedef struct packed {
+    trapType_ trapType;
+    logic [31:0] faultingAddress;
+  } trapPayload_;
+
   typedef struct packed {
     CSROp_ CSROp; // default none
     destinationCSR_ destinationCSR;
@@ -163,23 +181,6 @@ package pack;
     logic CSRWriteIntent;
   } memoryWritebackPayload_;
 
-  typedef struct packed {
-    trapType_ trapType;
-    logic [31:0] instruction;
-    logic [31:0] faultingAddress;
-  } trapPayload_;
 
-  typedef enum logic [3:0] {
-    NONE = 4'b0000,
-    ILLEGAL = 4'b0001,
-    MIS_STORE = 4'b0010,
-    MIS_LOAD = 4'b0011,
-    MIS_INST = 4'b0100,
-    ECALL = 4'b0101,
-    EBREAK = 4'b0110,
-    ACCESS_STORE = 4'b0111, // not implemented yet
-    ACCESS_LOAD = 4'b1000, // not implemented yet
-    ACCESS_INST = 4'b1001 // not implemented yet
-  } trapType_;
 
 endpackage

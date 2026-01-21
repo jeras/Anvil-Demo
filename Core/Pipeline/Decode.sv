@@ -10,7 +10,8 @@ module Decode (
     output logic [4:0] readAddress1,
     output logic [4:0] readAddress2,
     input logic [31:0] readData1,
-    input logic [31:0] readData2
+    input logic [31:0] readData2,
+    output logic decodeCombIllegal
 );
 
     opcode_ opcode;
@@ -27,6 +28,7 @@ module Decode (
         decodeExecuteCandidate.registerData2 = readData2;
         decodeExecuteCandidate.programCounter = fetchDecodePayload.programCounter;
         decodeExecuteCandidate.programCounterPlus4 = fetchDecodePayload.programCounterPlus4;
+        decodeCombIllegal = decodeExecuteCandidate.trapPayload.trapType == ILLEGAL;
         unique case (opcode)
             OPCODE_ALU_REG: begin 
                 decodeExecuteCandidate.destinationRegister = fetchDecodePayload.instruction[11:7];
@@ -286,14 +288,12 @@ module Decode (
                 decodeExecutePayload.memoryReadEnable <= 1'b0;
                 decodeExecutePayload.memoryWriteEnable <= 1'b0;
                 decodeExecutePayload.decodeExecuteCSR.CSROp <= CSR_NONE;
-                decodeExecutePayload.trapPayload.instruction = fetchDecodePayload.instruction;
                 decodeExecutePayload.valid <= fetchDecodePayload.valid;
                 if (decodeExecuteCandidate.trapPayload.trapType == ILLEGAL) begin
-                    decodeExecutePayload.trapPayload.faultingAddress = fetchDecodePayload.programCounter;
+                    decodeExecutePayload.trapPayload.faultingAddress <= fetchDecodePayload.instruction;
                 end
             end else begin
                 decodeExecutePayload <= decodeExecuteCandidate;
-                decodeExecutePayload.trapPayload.instruction = fetchDecodePayload.instruction;
                 decodeExecutePayload.valid <= fetchDecodePayload.valid;
             end
         end

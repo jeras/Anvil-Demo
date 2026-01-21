@@ -48,7 +48,7 @@ module Execute (
         brOp1 = forwardEnable1 ? forwardData1 : decodeExecutePayload.registerData1;
         brOp2 = forwardEnable2 ? forwardData2 : decodeExecutePayload.registerData2;
         csrOperand = decodeExecutePayload.decodeExecuteCSR.CSRSrc ? brOp1 : {27'd0, decodeExecutePayload.decodeExecuteCSR.CSRImmediate};
-        if (decodeExecutePayload.isMRET && decodeExecutePayload.valid && !decodeExecutePayload.illegal) begin
+        if (decodeExecutePayload.isMRET && decodeExecutePayload.valid && (decodeExecutePayload.trapPayload.trapType == NONE)) begin
             mretSignal = 1'd1;
             destinationCSR = MEPC;
             branchData = forwardCorrectedCSRReadData;

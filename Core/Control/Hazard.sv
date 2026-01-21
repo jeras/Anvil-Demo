@@ -21,7 +21,8 @@ module Hazard (
     input logic fetchDecodeValid,
     input writebackType_ decodeExecuteWBType,
     input logic [4:0] decodeExecuteDestinationRegister,
-    input trapPayload_ trapData
+    input trapPayload_ trapData,
+    input logic decodeCombIllegal
 );
     // Trap Handler
     always_comb begin

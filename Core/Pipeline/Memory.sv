@@ -35,7 +35,7 @@ module Memory (
         illegal = 1'b0;
         storeConfirm = 1'b0;
         storeByteEnable = 4'b0000;
-        if (executeMemoryPayload.valid && !memoryWritebackControl.flush && !executeMemoryPayload.illegal) begin
+        if (executeMemoryPayload.valid && !memoryWritebackControl.flush && (executeMemoryPayload.trapPayload.trapType == NONE)) begin
             if (executeMemoryPayload.memoryReadEnable) begin
                 unique case (executeMemoryPayload.memoryWidth)
                     2'b00: begin end

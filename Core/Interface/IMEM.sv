@@ -13,7 +13,7 @@ module Imem (
     initial begin
         integer i;
         for (i = 0; i < 16384; i = i + 1) begin
-            mem[i] = 32'h00000013;
+            mem[i] = 32'h00000000;
         end
         $display("IMEM: loading imem.hex");
         $readmemh("imem.hex", mem);
