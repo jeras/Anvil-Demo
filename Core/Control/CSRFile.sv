@@ -36,25 +36,30 @@ module CSRFile (
             csrs[MISA] <= 32'h40000100;
             csrs[MSTATUS] <= 32'h00001800;
         end else begin
-            if (csrDestinationEnable) begin
-                csrs[destinationCSR] <= csrWriteData;
-            end
-            if (!(csrDestinationEnable && (destinationCSR == MCYCLE))) begin
-                csrs[MCYCLE] <= csrs[MCYCLE] + 32'd1;
-            end
-            if (dualValid && !(csrDestinationEnable && (destinationCSR == MINSTRET))) begin
-                csrs[MINSTRET] <= csrs[MINSTRET] + 32'd1;
-            end
             if (controlReset) begin
                 csrs[MTVAL] <= mtval;
                 csrs[MCAUSE] <= {28'd0, mcause};
                 csrs[MEPC] <= memoryWritebackPC;
                 csrs[MSTATUS][7] <= csrs[MSTATUS][3]; // MPIE <= MIE
                 csrs[MSTATUS][3] <= 1'b0; // MIE <= 0
-                $strobe("\n\nException: MEPC=%08h MCAUSE=%08h MTVEC=%08h MTVAL=%08h\n\n", csrs[MEPC], csrs[MCAUSE], csrs[MTVEC], csrs[MTVAL]);
+                $strobe("\n\nException: MEPC=%08h (actual=%08h) MCAUSE=%08h MTVEC=%08h MTVAL=%08h\n\n", 
+                        csrs[MEPC], memoryWritebackPC, csrs[MCAUSE], csrs[MTVEC], csrs[MTVAL]);
             end else if (mretSignal) begin
                 csrs[MSTATUS][3] <= csrs[MSTATUS][7]; // MIE <= MPIE
                 csrs[MSTATUS][7] <= 1'b1; // MPIE <= 1
+            end else begin
+                if (csrDestinationEnable) begin
+                    logic [31:0] old;
+                    old = csrs[destinationCSR];
+                    csrs[destinationCSR] <= csrWriteData;
+                    $display("CSR Write: CSR[%0d] <= %08h (old was %08h)", destinationCSR, csrWriteData, old);
+                end
+                if (!(csrDestinationEnable && (destinationCSR == MCYCLE))) begin
+                    csrs[MCYCLE] <= csrs[MCYCLE] + 32'd1;
+                end
+                if (dualValid && !(csrDestinationEnable && (destinationCSR == MINSTRET))) begin
+                    csrs[MINSTRET] <= csrs[MINSTRET] + 32'd1;
+                end
             end
         end
     end

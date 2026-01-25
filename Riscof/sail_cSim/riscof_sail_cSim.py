@@ -41,12 +41,17 @@ class sail_cSim(pluginTemplate):
     def initialise(self, suite, work_dir, archtest_env):
         self.suite = suite
         self.work_dir = work_dir
+        
+        repo_root = os.path.abspath(os.path.join(self.pluginpath, "../../"))
+        suite_header_dir = os.path.join(repo_root, "riscv-arch-test/riscv-test-suite/env")
+        
         self.objdump_cmd = 'riscv{1}-unknown-elf-objdump -D {0} > {2};'
         self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0} \
          -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles\
          -T '+self.pluginpath+'/env/link.ld\
          -I '+self.pluginpath+'/env/\
-         -I ' + archtest_env
+         -I ' + archtest_env + ' \
+         -I ' + suite_header_dir
 
     def build(self, isa_yaml, platform_yaml):
         ispec = utils.load_yaml(isa_yaml)['hart0']
@@ -101,7 +106,9 @@ class sail_cSim(pluginTemplate):
             execute += self.objdump_cmd.format(elf, self.xlen, 'ref.disass')
             sig_file = os.path.join(test_dir, self.name[:-1] + ".signature")
 
-            execute += self.sail_exe[self.xlen] + ' --test-signature={0} {1} > {2}.log 2>&1;'.format(sig_file, elf, test_name)
+            # Use --config to load the custom.json configuration
+            config_file = os.path.join(self.pluginpath, 'custom.json')
+            execute += self.sail_exe[self.xlen] + ' --config {0} --test-signature={1} {2} > {3}.log 2>&1;'.format(config_file, sig_file, elf, test_name)
 
             cov_str = ' '
             for label in testentry['coverage_labels']:

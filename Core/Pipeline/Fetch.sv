@@ -41,6 +41,7 @@ module Fetch (
             end 
         end
     end
+
     always_ff @(posedge clock) begin
         if (!reset && !controlReset) begin
             if (fetchDecodeControl.flush) begin

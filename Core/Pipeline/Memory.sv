@@ -121,7 +121,7 @@ module Memory (
     always_ff @(posedge clock) begin
         if (reset) begin
             storeValid <= 1'b0;
-        end else if (!storeValid && !illegal && !accessFault && !memoryWritebackControl.flush) begin
+        end else if (!storeValid && !illegal && !accessFault && !memoryWritebackControl.flush && (memoryWritebackPayload.trapPayload.trapType == NONE)) begin
             storeValid <= storeReq;
         end else if (storeComplete) begin
             storeValid <= 1'b0;
@@ -166,6 +166,9 @@ module Memory (
                         endcase
                     end
                     memoryWritebackPayload.writebackEnable <= executeMemoryPayload.memoryReadEnable && loadDataValid;
+                    if (executeMemoryPayload.memoryReadEnable && loadDataValid) begin
+                        $strobe("Loaded %08x from %08x", loadData, addressRegister);
+                    end
                 end
                 WB_PC4: begin 
                     memoryWritebackPayload.data <= executeMemoryPayload.programCounterPlus4;
@@ -207,6 +210,7 @@ module Memory (
             end
         end
     end
+
 
 endmodule
 

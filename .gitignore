@@ -1,6 +1,7 @@
-spike
-riscv-tests/
-.vscode/
-riscv-arch-test/
-.venv/
-sail-riscv/
+/*
+!/Core
+!/VerificationCerts
+!/Verilator
+!LICENSE
+!README.md
+!sim_main.cpp

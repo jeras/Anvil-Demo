@@ -151,12 +151,14 @@ module Decode (
                 decodeExecuteCandidate.destinationRegister = fetchDecodePayload.instruction[11:7];
                 decodeExecuteCandidate.aluSource = ALU_ZERO_IMM;
                 decodeExecuteCandidate.writebackType = WB_ALU;
+                decodeExecuteCandidate.aluOperation = ALU_ADD;
                 decodeExecuteCandidate.immediate = {fetchDecodePayload.instruction[31:12], 12'd0};
             end // U-type   (load upper immediate)
             OPCODE_AUIPC: begin 
                 decodeExecuteCandidate.destinationRegister = fetchDecodePayload.instruction[11:7];
                 decodeExecuteCandidate.aluSource = ALU_PC_IMM;
                 decodeExecuteCandidate.writebackType = WB_ALU;
+                decodeExecuteCandidate.aluOperation = ALU_ADD;
                 decodeExecuteCandidate.immediate = {fetchDecodePayload.instruction[31:12], 12'd0};
             end // U-type   (add upper immediate to PC)
             OPCODE_JAL: begin 
@@ -307,8 +309,10 @@ module Decode (
                 decodeExecutePayload <= decodeExecuteCandidate;
                 decodeExecutePayload.valid <= fetchDecodePayload.valid;
             end else begin
-                decodeExecutePayload <= '0;
+                decodeExecutePayload <= decodeExecuteCandidate;
+                decodeExecutePayload.valid <= 1'b0;
             end
         end
     end
+
 endmodule

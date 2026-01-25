@@ -45,7 +45,7 @@ module Forward (
                 (decodeExecuteRegister1 == executeMemoryDestinationRegister)) begin
                 forwardEnable1 = 1'b1;
                 case (executeMemoryWritebackType)
-                    WB_ALU: forwardData1 = executeMemoryData;
+                    WB_ALU: forwardData1 = (executeMemoryCSROp != CSR_NONE) ? oldCSRData : executeMemoryData;
                     WB_PC4: forwardData1 = executeMemoryPC4;
                     default: begin
                         if (executeMemoryCSROp != CSR_NONE) forwardData1 = oldCSRData;
@@ -67,7 +67,7 @@ module Forward (
                 (decodeExecuteRegister2 == executeMemoryDestinationRegister)) begin
                 forwardEnable2 = 1'b1;
                 case (executeMemoryWritebackType)
-                    WB_ALU: forwardData2 = executeMemoryData;
+                    WB_ALU: forwardData2 = (executeMemoryCSROp != CSR_NONE) ? oldCSRData : executeMemoryData;
                     WB_PC4: forwardData2 = executeMemoryPC4;
                     default: begin
                         if (executeMemoryCSROp != CSR_NONE) forwardData2 = oldCSRData;

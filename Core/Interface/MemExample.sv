@@ -21,17 +21,16 @@ module MemExample (
 );
 
     // One shared address space
-    logic [31:0] mem [0:16383];
+    logic [31:0] mem [0:524287] /* verilator public */;
     logic        storeValid_q;
 
     initial begin
         integer i;
-        for (i = 0; i < 16384; i = i + 1) begin
+        for (i = 0; i < 524288; i = i + 1) begin
             mem[i] = 32'h00000000;
         end
 
-        $display("Loading mem.hex...");
-        $readmemh("mem.hex", mem);
+        $readmemh("Core/Interface/mem.hex", mem);
 
     end
 
@@ -41,7 +40,7 @@ module MemExample (
         i_valid = 1'b0;
         if (!reset) begin
             if (i_address[1:0] == 2'b00) begin
-                i_data  = mem[i_address[15:2]];
+                i_data  = mem[i_address[20:2]];
                 i_valid = 1'b1;
             end
         end
@@ -53,7 +52,7 @@ module MemExample (
             loadData      = 32'b0;
             loadDataValid = 1'b0;
         end else begin
-            loadData      = mem[d_address[15:2]];
+            loadData      = mem[d_address[20:2]];
             loadDataValid = 1'b1;
         end
     end
@@ -68,7 +67,7 @@ module MemExample (
 
             if (storeValid && !storeValid_q) begin
                 logic [31:0] word;
-                word = mem[d_address[15:2]];
+                word = mem[d_address[20:2]];
 
                 if (byteEnable[0]) word[7:0]   = storeData[7:0];
                 if (byteEnable[1]) word[15:8]  = storeData[15:8];
@@ -76,10 +75,10 @@ module MemExample (
                 if (byteEnable[3]) word[31:24] = storeData[31:24];
 
                 // kept indexing behavior consistent with your original store path
-                mem[d_address[31:2]] <= word;
+                mem[d_address[20:2]] <= word;
 
-                $display("\n\nStored %08h at address %08h", word, {d_address[31:2], 2'b00}, "\n\n");
                 storeComplete <= 1'b1;
+                $strobe("Stored %08x at %08x", word, d_address);
             end
 
             storeValid_q <= storeValid;
