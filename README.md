@@ -74,9 +74,9 @@ VenomCPU guarantees deterministic behavior and will strictly adhere to this inte
 | MINSTRET  | MRW    | Writes Override Hardware Increments   |
 
 ## Development Roadmap
-1. `memoryBytes` plumbing
+1. Fabric usage reduction, polish, and optimization (v1.0 is a rough draft)
 2. Verification with randomized multi-cycle RAM
-3. Fabric usage reduction and optimization
+3. `memoryBytes` plumbing
 4. Verification with constrained randomized tests
 5. Load buffer with dependency checks
 6. Hardware interrupt timer and spec accurate handling
