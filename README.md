@@ -82,3 +82,7 @@ VenomCPU guarantees deterministic behavior and will strictly adhere to this inte
 6. Hardware interrupt timer and spec accurate handling
 7. FreeRTOS compatibility
 
+## Licence
+VenomCPU is fully open source and free to use under the project's license. You are welcome to use, modify, and integrate the core into your own projects. If you end up using VenomCPU, I’d love to hear about it — feedback and project showcases are always appreciated.
+
+
