@@ -1,12 +1,12 @@
 # VenomCPU
-## RISC-V RV32I Pipelined CPU Core in SystemVerilog
-### RISCOF verified. Docs coming soon!
-### Specifications:
+## Overview
+
+- RISC-V RV32I Zicsr ISA
 - In-Order 5-Stage Pipeline
-- Handshake Based IF + MEM For Arbitrary External RAM
-- Precise Trap Behavior
-- Zicsr + M-Mode Privileged ISA
-- RV32I Base Integer Instruction Set
+- 76 Test RISCOF Verified 
+- Decoupled Memory For External RAM
+- Hardwired M-Mode Execution
+
 ## Supported CSR Reference Table
 | CSR       | ACCESS | NOTES                                 |
 |-----------|--------|---------------------------------------|
@@ -24,10 +24,7 @@
 | MCYCLE    | MRW    | Writes Override Hardware Incriments   |
 | MINSTRET  | MRW    | Writes Override Hardware Incriments   |
 
-Pipeline Diagram: 
-
-# SoftCPU RTL Structure
-
+## Dataflow Chart
 ```mermaid
 %%{init: {"flowchart": {"curve": "stepAfter", "nodeSpacing": 10, "rankSpacing": 40}}}%%
 flowchart LR
