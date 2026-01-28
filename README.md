@@ -1,7 +1,7 @@
 # VenomCPU
 
 ## Introduction
-VenomCPU is a RISC-V CPU core implementing the RV32I base ISA with Zicsr support, verified using the RISC-V Compatibility Framework (RISCOF). The core is provided as synthesizable SystemVerilog, and can be used in FPGA, as a reference implementation, a research and learning platform, or as a foundation for custom RISC-V system designs.
+VenomCPU is a RISC-V CPU core implementing the RV32I base ISA with Zicsr support, verified using the RISC-V Compatibility Framework (RISCOF). The core is provided as synthesizable SystemVerilog, and is intended for FPGA implementation, reference simulation, research and education, and as a foundation for custom RISC-V system designs.
 
 ## Features
 
@@ -91,6 +91,9 @@ VenomCPU guarantees deterministic behavior and will strictly adhere to this inte
 5. Load buffer with dependency checks
 6. Hardware interrupt timer and spec accurate handling
 7. FreeRTOS compatibility
+
+## Design Context
+This core was personally developed as a Sophomore project to learn computer archetecture. The design emphasizes experiential learning through iterative development rather than drop-in cannonical solutitions. As a result, certain HDL choices and dataflow strategies may differ from conventional textbook design. These decisions reflect the exploratory nature of the project and the process of building the core from concept rather than reference. For students and new designers, I encourage you to move past hesitation and begin building, even before you feel fully prepared. The design process itself will drive your motivation and naturally introduce the knowledge required to succeed.
 
 ## Licence
 VenomCPU is fully open source and free to use under the project's license. You are welcome to use, modify, and integrate the core into your own projects. If you end up using VenomCPU, I’d love to hear about it — feedback and project showcases are always appreciated.
